@@ -31,19 +31,23 @@ begin
     -- test whole shift process
     test_runner_setup(runner, runner_cfg);
     show(get_logger(default_checker), display_handler, pass);
+    set_stop_level(failure);
 
     while test_suite loop
       if run("just_once") then
         wait until falling_edge(clk);
         data_i <= "10101010";
         store_i <= '1';
+        wait for 0.5 ns;
+        check_equal(q_o, '1');
         wait until falling_edge(clk);
         store_i <= '0';
 
-        for i in 0 to 3 loop
-          check_equal(q_o, '1');
-          wait until falling_edge(clk);
+        wait for 0.5 ns;
+        for i in 0 to 2 loop
           check_equal(q_o, '0');
+          wait until falling_edge(clk);
+          check_equal(q_o, '1');
           wait until falling_edge(clk);
         end loop;  -- i
       elsif run("reload_in_middle") then
@@ -51,17 +55,21 @@ begin
         wait until falling_edge(clk);
         data_i <= "11001100";
         store_i <= '1';
+        wait for 0.5 ns;
+        check_equal(q_o, '1');
         wait until falling_edge(clk);
         store_i <= '0';
         check_equal(q_o, '1');
         wait until falling_edge(clk);
-        check_equal(q_o, '1');
+        check_equal(q_o, '0');
         wait until falling_edge(clk);
         check_equal(q_o, '0');
         store_i <= '1';
         data_i <= "11111111";
+        wait for 0.5 ns;
+        check_equal(q_o, '1');
 
-        for i in 0 to 7 loop
+        for i in 0 to 6 loop
           wait until falling_edge(clk);
           store_i <= '0';
           check_equal(q_o, '1');
