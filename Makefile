@@ -1,56 +1,22 @@
-SIMDIR := sim
-BINDIR := bin
-SRCDIR := src
-TBDIR := testbench
-WORKDIR := work
-VHDLEX := vhd
+.PHONY: reload list
 
-WORKFILE := $(WORKDIR)/work-obj93.cf
+WAVEFORM_VIEWER = gtkwave
 
-#####################################################
-#                                                   #
-#                 Top level entity                  #
-#                                                   #
-#####################################################
-TOP_ENTITY := spi
-TESTBENCH ?= $(TOP_ENTITY)_tb # default
+reload:
+	@gsettings set com.geda.gtkwave reload 1
+	@gsettings set com.geda.gtkwave reload 0
 
-WAVEFORM_VIEWER := gtkwave
+list:
+	@python -m run.py -l
 
-COMPILER := ghdl
-COMPILER_FLAGS := --std=08 --ieee=standard --workdir=$(WORKDIR)
+run:
+	python -m run.py
 
-STOP_TIME ?= 1000ns
-RUN_FLAGS := --stop-time=$(STOP_TIME) --stats
+%.run:
+	python -m run.py --exit-0 --gtkwave-fmt ghw $(basename $@)
 
-TBSOURCES := $(wildcard $(TBDIR)/*.$(VHDLEX) $(TBDIR)/**/*.$(VHDLEX))
-SOURCES := $(wildcard $(SRCDIR)/*.$(VHDLEX) $(SRCDIR)/**/*.$(VHDLEX))
-ALL_SOURCES := $(SOURCES) $(TBSOURCES)
+%.open: %.run
+	make reload
+	pgrep $(WAVEFORM_VIEWER) || $(WAVEFORM_VIEWER) $(shell find vunit_out/test_output/$(basename $@)* -maxdepth 0 -type d)/ghdl/wave.ghw &
 
-.PHONY: all clean
-
-all: $(SIMDIR)/$(TESTBENCH).ghw
-
-$(BINDIR)/%_tb.out: $(TBDIR)/%_tb.$(VHDLEX) $(WORKFILE) $(BINDIR)
-	@$(COMPILER) -m -o $@ $(COMPILER_FLAGS) $(notdir $(basename $@))
-
-$(BINDIR)/%.out: $(SRCDIR)/%.$(VHDLEX) $(WORKFILE) $(BINDIR)
-	@$(COMPILER) -m -o $@ $(COMPILER_FLAGS) $(notdir $(basename $@))
-
-$(SIMDIR)/%.ghw: $(BINDIR)/%.out
-	$< $(RUN_FLAGS) --wave=$@
-	gsettings set com.geda.gtkwave reload 1
-	gsettings set com.geda.gtkwave reload 0
-	pgrep $(WAVEFORM_VIEWER) || $(WAVEFORM_VIEWER) $@ &
-
-$(WORKFILE): $(WORKDIR) $(ALL_SOURCES)
-	@$(COMPILER) -i $(COMPILER_FLAGS) $(ALL_SOURCES)
-
-$(BINDIR) $(WORKDIR) $(SIMDIR):
-	@mkdir $@
-
-clean:
-	@$(RM) -rf $(SIMDIR) $(WORKDIR) $(BINDIR)
-	@$(MAKE) -C ax309 clean
-
-$(ALL_SOURCES):
+%.all: %.open
