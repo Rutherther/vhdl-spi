@@ -16,10 +16,13 @@ end entity spi_recv;
 
 architecture a1 of spi_recv is
   signal bit_index_reg : integer range 0 to WIDTH;
+  signal bit_index_next : integer range 0 to WIDTH;
   signal initialized : std_logic;
 begin  -- architecture a1
-  recv_o <= '1' when bit_index_reg = 0 and initialized = '1' else
+  recv_o <= '1' when bit_index_next = 1 and initialized = '1' else
             '0';
+
+  bit_index_next <= (bit_index_reg + 1) mod WIDTH;
 
   set_bit_index: process (clk_i) is
   begin  -- process set_bit_index
@@ -27,8 +30,10 @@ begin  -- architecture a1
       bit_index_reg <= 0;
       initialized <= '0';
     elsif rising_edge(clk_i) then        -- rising clock edge
-      initialized <= '1';
-      bit_index_reg <= (bit_index_reg + 1) mod WIDTH;
+      if initialized = '0' and bit_index_reg = 0 then
+        initialized <= '1';
+      end if;
+      bit_index_reg <= bit_index_next;
     end if;
   end process set_bit_index;
 
