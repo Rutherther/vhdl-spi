@@ -2,3 +2,7 @@ _impactbatch.log
 work/
 sim/
 bin/
+
+__pycache__/
+vunit_out/
+vhdl_ls.toml
