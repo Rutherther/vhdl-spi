@@ -18,7 +18,7 @@ architecture a1 of tb_spi_transmit is
   signal rst : std_logic := '0';
 
   signal transmit_data : std_logic_vector(7 downto 0);
-  signal transmit_pulse : std_logic;
+  signal valid_pulse : std_logic;
 
   signal ready : std_logic;
   signal transmitting : std_logic;
@@ -31,7 +31,7 @@ begin  -- architecture a1
       clk_i  => clk,
       rst_in => rst,
       transmit_data_i => transmit_data,
-      transmit_i => transmit_pulse,
+      valid_i => valid_pulse,
       ready_o => ready,
       transmitting_o => transmitting,
       transmit_bit_o => mosi);
@@ -45,13 +45,12 @@ begin  -- architecture a1
     test_runner_setup(runner, runner_cfg);
 
     while test_suite loop
-      if run("transmit_one_byte") then
-        wait until falling_edge(clk);
+      if run("one_byte") then
         check_equal(ready, '1');
-        transmit_pulse <= '1';
+        valid_pulse <= '1';
         transmit_data <= "11100010";
         wait until falling_edge(clk);
-        transmit_pulse <= '0';
+        valid_pulse <= '0';
 
         for i in 0 to 2 loop
           check_equal(ready, '1');
@@ -72,27 +71,21 @@ begin  -- architecture a1
         check_equal(mosi, '1');
         wait until falling_edge(clk);
         check_equal(ready, '1');
-        check_equal(transmitting, '1');
+        check_equal(transmitting, '0');
         check_equal(mosi, '0');
         wait until falling_edge(clk);
         check_equal(ready, '1');
         check_equal(transmitting, '0');
-      elsif run("transmit_more_bytes") then
-        wait until falling_edge(clk);
-        check_equal(ready, '1');
-        transmit_pulse <= '1';
+      elsif run("more_bytes") then
+        valid_pulse <= '1';
         transmit_data <= "11100010";
         wait until falling_edge(clk);
         check_equal(ready, '1');
-        transmit_pulse <= '1';
+        valid_pulse <= '1';
         transmit_data <= "00011101";
-
-        check_equal(ready, '1');
-        check_equal(transmitting, '1');
-        check_equal(mosi, '1');
         wait until falling_edge(clk);
         check_equal(ready, '0');
-        transmit_pulse <= '0';
+        valid_pulse <= '0';
 
         for i in 0 to 1 loop
           check_equal(ready, '0');
@@ -139,12 +132,9 @@ begin  -- architecture a1
         wait until falling_edge(clk);
 
         check_equal(ready, '1');
-        check_equal(transmitting, '1');
+        check_equal(transmitting, '0');
         check_equal(mosi, '1');
 
-        wait until falling_edge(clk);
-        check_equal(ready, '1');
-        check_equal(transmitting, '0');
         wait until falling_edge(clk);
         check_equal(ready, '1');
         check_equal(transmitting, '0');
